@@ -34,12 +34,36 @@ with tab1:
                     search_q = safe_str(user_input)
                     web_context = ""
                     with DDGS() as ddgs:
-                        results = list(ddgs.text(search_q, max_results=5))
+                        results = list(ddgs.text(search_q, max_results=8))
                         for r in results:
                             web_context += f"Kaynak: {r['title']} - Özet: {r['body']}\n"
                     
-                    prompt = f"İddia: {user_input}\nVeriler: {web_context}\nBu iddiayı analiz et. Gereksiz nezaket cümleleri kurma. Sonuçta 'Gerçek', 'Yalan' veya 'Şüpheli' şeklinde net kararını belirt."
-                    
+                    prompt = f"""
+Sen bir profesyonel gerçek-yanlış haber dedektörüsün.
+
+İDDİA: {user_input}
+
+WEB KAYNAKLARI:
+{web_context}
+
+GÖREV:
+1. İddiayı web kaynaklarıyla karşılaştır
+2. Kaynaklar güvenilir mi? (haber sitesi mi, blog mu?)
+3. İddiayı destekleyen ve çürüten kaynakları ayır
+4. Net bir karar ver
+
+KURALLAR:
+- Gereksiz nezaket cümleleri kurma
+- Eğer web'de yeterli bilgi yoksa 'Şüpheli' de
+- Kaynakları belirt
+
+SONUÇ FORMATI:
+- Kaynaklar: (hangi sitelerde geçiyor)
+- Destekleyen Kanıtlar:
+- Çürüten Kanıtlar:
+- KARAR: GERÇEK / YALAN / ŞÜPHELİ
+- Güven Skoru: %0-100
+"""
                     chat_completion = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
                         model=TEXT_MODEL,
@@ -77,6 +101,9 @@ with tab2:
 - Deri dokusu (aşırı pürüzsüz mü?)
 - Yazı varsa harflerin doğruluğu
 - Gözler ve yansımalar
+- Fiziksel olarak imkansız objeler
+- Arka planda mantıksız detaylar
+- Obje ile arka planın fiziksel uyumsuzluğu
 
 SONUÇ FORMATI:
 - Dikkat Çeken İpuçları: (gözlemlerin)
