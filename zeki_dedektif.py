@@ -3,13 +3,15 @@ import base64
 from duckduckgo_search import DDGS
 from groq import Groq
 from PIL import Image
+import io
 
 # --- AYARLAR ---
-
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-MODEL_NAME = "llama-3.3-70b-versatile"
+TEXT_MODEL = "llama-3.3-70b-versatile"
+VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"
 
 def encode_image(image_file):
+    image_file.seek(0)
     return base64.b64encode(image_file.read()).decode('utf-8')
 
 def safe_str(text):
@@ -40,59 +42,71 @@ with tab1:
                     
                     chat_completion = client.chat.completions.create(
                         messages=[{"role": "user", "content": prompt}],
-                        model=MODEL_NAME,
+                        model=TEXT_MODEL,
                     )
                     st.info(safe_str(chat_completion.choices[0].message.content))
                 except Exception as e:
                     st.error(f"Hata: {str(e)}")
 
-# --- TAB 2: GÖRSEL ANALİZ (NET VE KISA) ---
+# --- TAB 2: GÖRSEL ANALİZ ---
 with tab2:
     img_file = st.file_uploader("Görsel yükleyin", type=["jpg", "jpeg", "png"])
     
     if img_file:
         img = Image.open(img_file)
         st.image(img, width=500)
-        w, h = img.size
 
-        # --- TAB 2: MANTIKSAL ÇAPRAZ SORGU (v49) ---
-        if st.button("Teknik Analizi Başlat"):
-            if img_file is not None:
-                with st.spinner('Veri tabanındaki dijital izleri karşılaştırıyorum...'):
-                    try:
-                        img = Image.open(img_file)
-                        w, h = img.size
-                        
-                        # Dedektife sadece elindeki somut verileri veriyoruz
-                        analiz_prompt = f"""
-                        Sen bir Dijital Adli Bilişim Uzmanısın. Görseli GÖREMEDİĞİNİ biliyorum. 
-                        Sadece şu somut verilere dayanarak bir Olasılık Raporu hazırla:
+        if st.button("Görsel Analizi Başlat"):
+            with st.spinner('Görsel inceleniyor...'):
+                try:
+                    # Görseli base64'e çevir
+                    img_file.seek(0)
+                    image_data = base64.b64encode(img_file.read()).decode('utf-8')
+                    
+                    # Dosya uzantısına göre media type belirle
+                    ext = img_file.name.split('.')[-1].lower()
+                    media_type = "image/jpeg" if ext in ["jpg", "jpeg"] else "image/png"
 
-                        SOMUT VERİLER:
-                        - Çözünürlük: {w}x{h}
-                        - Dosya Adı: {img_file.name}
+                    analiz_prompt = """Sen bir dijital adli bilişim uzmanısın. Bu görseli dikkatle inceleyerek yapay zeka tarafından üretilip üretilmediğini tespit et.
 
-                        DEĞERLENDİRME KRİTERLERİ:
-                        1. DOSYA ADI ANALİZİ: Eğer dosya adında 'pexels', 'unsplash', 'canon', 'iphone' gibi ifadeler varsa bu GERÇEK bir fotoğraftır. Eğer 'ai', 'generated', 'midjourney', 'dalle' geçiyorsa YAPAY ZEKA'dır.
-                        2. ÇÖZÜNÜRLÜK ANALİZİ: {w}x{h} boyutu standart bir sensör oranı mı (3:2, 4:3, 16:9)? Eğer çok absürt bir kareyse (Örn: 1024x1024 tam kare) AI olma ihtimali artar.
-                        3. ŞÜPHE PRENSİBİ: Eğer dosya adı stok sitesinden geliyorsa (Pexels vb.), çözünürlük ne olursa olsun 'İNSAN YAPIMI' lehine karar ver.
+Şu kriterlere göre analiz et:
+- Ellerde parmak sayısı ve şekli
+- Yüz simetrisi ve anatomik doğruluk  
+- Arka plan tutarlılığı ve mantığı
+- Işık/gölge yönü tutarlılığı
+- Deri dokusu (aşırı pürüzsüz mü?)
+- Yazı varsa harflerin doğruluğu
+- Gözler ve yansımalar
 
-                        HÜKÜM FORMATI:
-                        - Tespit Edilen İpucu: 
-                        - Tahmini Kaynak: 
-                        - 3. maddeye göre karar verdiysen bile stok sitesi adı olduğu için %100 bu kararı verdiğini söyleme
-                        - SONUÇ: YAPAY ZEKA veya İNSAN YAPIMI
-                        """
+SONUÇ FORMATI:
+- Dikkat Çeken İpuçları: (gözlemlerin)
+- Güven Skoru: %0-100
+- KARAR: YAPAY ZEKA veya GERÇEK FOTOĞRAF"""
 
-                        chat_completion = client.chat.completions.create(
-                            messages=[{"role": "user", "content": analiz_prompt}],
-                            model="llama-3.3-70b-versatile", 
-                        )
-                        
-                        st.success("🤖 Mantıksal Analiz Sonucu:")
-                        st.write(chat_completion.choices[0].message.content)
-                        
-                    except Exception as e:
-                        st.error(f"Sorgulama başarısız: {str(e)}")
-            else:
-                st.warning("Lütfen önce bir fotoğraf yükle!")
+                    chat_completion = client.chat.completions.create(
+                        model=VISION_MODEL,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "image_url",
+                                        "image_url": {
+                                            "url": f"data:{media_type};base64,{image_data}"
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": analiz_prompt
+                                    }
+                                ]
+                            }
+                        ],
+                        max_tokens=1000,
+                    )
+
+                    st.success("🔍 Görsel Analiz Sonucu:")
+                    st.write(chat_completion.choices[0].message.content)
+
+                except Exception as e:
+                    st.error(f"Analiz başarısız: {str(e)}")
