@@ -111,7 +111,7 @@ SONUÇ FORMATI:
 - KARAR: YAPAY ZEKA veya GERÇEK FOTOĞRAF
 """
                     
-        chat_completion = client.chat.completions.create(
+                    chat_completion = client.chat.completions.create(
                         model=VISION_MODEL,
                         messages=[
                             {
