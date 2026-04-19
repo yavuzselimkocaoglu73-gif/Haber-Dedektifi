@@ -110,8 +110,7 @@ SONUÇ FORMATI:
 - Güven Skoru: %0-100
 - KARAR: YAPAY ZEKA veya GERÇEK FOTOĞRAF
 """
-
-          FOTOĞRAF
+                    
         chat_completion = client.chat.completions.create(
                         model=VISION_MODEL,
                         messages=[
