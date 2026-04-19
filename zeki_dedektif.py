@@ -101,7 +101,7 @@ Görselde ne gördüğünü kısaca söyle.
 - Deri dokusu (aşırı pürüzsüz mü?)
 - Yazı varsa harflerin doğruluğu
 - Gözler ve yansımalar
-- Fiziksel olarak imkansız objeler
+- Fiziksel olarak imkansız objeler(sonuçta buna ağırlık ver) 
 - Arka planda mantıksız detaylar
 - Obje ile arka planın fiziksel uyumsuzluğu
 
