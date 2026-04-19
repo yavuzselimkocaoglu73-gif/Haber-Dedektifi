@@ -92,7 +92,7 @@ with tab2:
                     media_type = "image/jpeg" if ext in ["jpg", "jpeg"] else "image/png"
 
                     analiz_prompt = """Sen bir dijital adli bilişim uzmanısın. Bu görseli dikkatle inceleyerek yapay zeka tarafından üretilip üretilmediğini tespit et.
-
+Görselde ne gördüğünü kısaca söyle. 
 Şu kriterlere göre analiz et:
 - Ellerde parmak sayısı ve şekli
 - Yüz simetrisi ve anatomik doğruluk  
@@ -108,9 +108,11 @@ with tab2:
 SONUÇ FORMATI:
 - Dikkat Çeken İpuçları: (gözlemlerin)
 - Güven Skoru: %0-100
-- KARAR: YAPAY ZEKA veya GERÇEK FOTOĞRAF"""
+- KARAR: YAPAY ZEKA veya GERÇEK FOTOĞRAF
+"""
 
-                    chat_completion = client.chat.completions.create(
+          FOTOĞRAF
+        chat_completion = client.chat.completions.create(
                         model=VISION_MODEL,
                         messages=[
                             {
